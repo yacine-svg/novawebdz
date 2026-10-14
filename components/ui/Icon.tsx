@@ -50,14 +50,8 @@ export function Icon({ name, ...props }: { name: IconName } & SVGProps<SVGSVGEle
 export function Mark(props: SVGProps<SVGSVGElement>) {
   return (
     <svg viewBox="0 0 32 32" aria-hidden="true" {...props}>
-      <defs>
-        <linearGradient id="nw-g" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#FF2E4D" />
-          <stop offset="1" stopColor="#2E7BFF" />
-        </linearGradient>
-      </defs>
       <rect width="32" height="32" rx="9" fill="#0D1328" />
-      <path d="M16 4.5c.9 6.5 4.9 10.6 11.5 11.5-6.6.9-10.6 4.9-11.5 11.5-.9-6.6-4.9-10.6-11.5-11.5C11.1 15.1 15.1 11 16 4.5z" fill="url(#nw-g)" />
+      <path d="M16 4.5c.9 6.5 4.9 10.6 11.5 11.5-6.6.9-10.6 4.9-11.5 11.5-.9-6.6-4.9-10.6-11.5-11.5C11.1 15.1 15.1 11 16 4.5z" fill="#FF2E4D" />
     </svg>
   );
 }

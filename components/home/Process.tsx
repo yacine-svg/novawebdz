@@ -96,13 +96,7 @@ export default function Process() {
                 0{i + 1}
               </span>
               <svg className="step-art" viewBox="0 0 240 180" aria-hidden="true">
-                <defs>
-                  <linearGradient id={`step-g${i}`} x1="0" y1="0" x2="1" y2="1">
-                    <stop offset="0" stopColor="#FF2E4D" />
-                    <stop offset="1" stopColor="#2E7BFF" />
-                  </linearGradient>
-                </defs>
-                {art(`url(#step-g${i})`)[i]}
+                {art(i % 2 ? "#2E7BFF" : "#FF2E4D")[i]}
               </svg>
               <h3>{s.title}</h3>
               <p>{s.text}</p>

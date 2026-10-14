@@ -157,7 +157,7 @@ export default function Street() {
             </span>
             <span className="ln">
               <span>
-                <em>Sekhri</em>.
+                Sekhri<span className="dot">.</span>
               </span>
             </span>
           </h1>

@@ -75,10 +75,6 @@ export default function SkillsWeb() {
   return (
     <svg ref={ref} viewBox={narrow ? "0 0 600 1000" : "0 0 1000 470"} role="group" aria-label="Skills">
       <defs>
-        <linearGradient id="sk-g" x1="0" x2="1">
-          <stop offset="0" stopColor="#FF2E4D" />
-          <stop offset="1" stopColor="#2E7BFF" />
-        </linearGradient>
         <filter id="sk-glow" x="-50%" y="-50%" width="200%" height="200%">
           <feGaussianBlur stdDeviation="4" />
         </filter>
@@ -92,7 +88,7 @@ export default function SkillsWeb() {
         const len = Math.hypot(x2 - x1, y2 - y1) * 1.1;
         return (
           <g key={i} style={{ opacity: on ? 1 : 0.12, transition: "opacity .4s" }}>
-            {active && on && <path d={d} fill="none" stroke="url(#sk-g)" strokeWidth={5} filter="url(#sk-glow)" opacity={0.7} />}
+            {active && on && <path d={d} fill="none" stroke="#FF2E4D" strokeWidth={5} filter="url(#sk-glow)" opacity={0.7} />}
             <path
               d={d}
               fill="none"
