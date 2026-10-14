@@ -1,39 +1,62 @@
 "use client";
 
-import { Canvas, useFrame } from "@react-three/fiber";
-import { Html, RoundedBox } from "@react-three/drei";
-import { useRef, useState } from "react";
+import { Canvas, useFrame, useLoader, useThree } from "@react-three/fiber";
+import { RoundedBox } from "@react-three/drei";
+import { Suspense, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import type { Project } from "@/data/projects";
-import { useLang } from "@/lib/i18n";
+import { DEVICE, cameraZ, coverCrop, roundedPlane } from "./deviceGeometry";
+import type { PreviewView } from "./LivePreview";
 
-/* The live site inside a 3D laptop and phone (drei <Html transform> + iframe).
-   400 / distanceFactor CSS pixels make one world unit, so each iframe fills its screen exactly. */
+/* A 3D laptop and phone showing the project's screenshots.
+   The screens are WebGL textures, so they always sit exactly on the devices
+   (CSS-3D iframes drift when the page lands on a half pixel).
+   Clicking a screen opens the live site in a full-size preview. */
 
-const LAPTOP = { w: 3.2, h: 2.0, cssW: 1280 };
-const PHONE = { w: 0.86, h: 1.86, cssW: 390 };
-const df = (worldW: number, cssW: number) => (worldW * 400) / cssW;
-
-function Screen({ url, title, cssW, worldW, worldH, poster }: { url: string; title: string; cssW: number; worldW: number; worldH: number; poster: string }) {
-  const { t } = useLang();
-  const [live, setLive] = useState(false);
-  const [loaded, setLoaded] = useState(false);
-  const cssH = Math.round((cssW * worldH) / worldW);
+function Screen({ url, w, h, r, view, onOpen }: { url: string; w: number; h: number; r: number; view: PreviewView; onOpen: (v: PreviewView) => void }) {
+  const gl = useThree((s) => s.gl);
+  const source = useLoader(THREE.TextureLoader, url);
+  // own copy: the same screenshot can be cropped differently on each device
+  const tex = useMemo(() => {
+    const t = source.clone();
+    t.colorSpace = THREE.SRGBColorSpace;
+    t.anisotropy = gl.capabilities.getMaxAnisotropy();
+    coverCrop(t, w / h);
+    t.needsUpdate = true;
+    return t;
+  }, [source, gl, w, h]);
+  const geometry = useMemo(() => roundedPlane(w, h, r), [w, h, r]);
+  useEffect(() => () => {
+    tex.dispose();
+    geometry.dispose();
+  }, [tex, geometry]);
   return (
-    <Html transform distanceFactor={df(worldW, cssW)} position={[0, 0, 0.002]} zIndexRange={[20, 0]}>
-      <div className="iframe-wrap" style={{ width: cssW, height: cssH, borderRadius: cssW > 600 ? 10 : 34, background: `#fff url(${poster}) top / cover no-repeat` }}>
-        <iframe src={url} title={title} loading="lazy" onLoad={() => setLoaded(true)} style={{ pointerEvents: live ? "auto" : "none", opacity: loaded ? 1 : 0, transition: "opacity .6s" }} />
-        {!live && (
-          <button className="iframe-shield" type="button" onClick={() => setLive(true)} aria-label={`${t.caseStudy.open} : ${title}`}>
-            <span>{loaded ? t.caseStudy.preview : t.caseStudy.loading}</span>
-          </button>
-        )}
-      </div>
-    </Html>
+    <mesh
+      geometry={geometry}
+      onClick={(e) => {
+        e.stopPropagation();
+        onOpen(view);
+      }}
+      onPointerOver={() => (document.body.style.cursor = "pointer")}
+      onPointerOut={() => (document.body.style.cursor = "")}
+    >
+      <meshBasicMaterial map={tex} toneMapped={false} />
+    </mesh>
   );
 }
 
-function Devices({ project, reduced }: { project: Project; reduced: boolean }) {
+function Rig() {
+  const { camera, size } = useThree();
+  useEffect(() => {
+    const aspect = size.width / Math.max(1, size.height);
+    camera.position.set(0, DEVICE.camY, cameraZ(aspect));
+    camera.lookAt(0, 0, 0);
+    camera.updateProjectionMatrix();
+  }, [camera, size]);
+  return null;
+}
+
+function Devices({ project, reduced, onOpen }: { project: Project; reduced: boolean; onOpen: (v: PreviewView) => void }) {
   const group = useRef<THREE.Group>(null);
   const pointer = useRef({ x: 0, y: 0 });
   useFrame((state, dt) => {
@@ -41,50 +64,60 @@ function Devices({ project, reduced }: { project: Project; reduced: boolean }) {
     if (!g) return;
     pointer.current.x += (state.pointer.x - pointer.current.x) * Math.min(1, dt * 3);
     pointer.current.y += (state.pointer.y - pointer.current.y) * Math.min(1, dt * 3);
-    const time = state.clock.elapsedTime;
-    g.rotation.y = -0.32 + (reduced ? 0 : pointer.current.x * 0.12);
-    g.rotation.x = 0.06 - (reduced ? 0 : pointer.current.y * 0.06);
-    g.position.y = reduced ? 0 : Math.sin(time * 0.8) * 0.04;
+    g.rotation.y = DEVICE.rotY + (reduced ? 0 : pointer.current.x * 0.12);
+    g.rotation.x = DEVICE.rotX - (reduced ? 0 : pointer.current.y * 0.06);
+    g.position.y = DEVICE.groupPos[1] + (reduced ? 0 : Math.sin(state.clock.elapsedTime * 0.8) * 0.04);
   });
-  const body = new THREE.Color("#1A1D25");
-  const alu = new THREE.Color("#B9BEC9");
+  const L = DEVICE.laptop;
+  const P = DEVICE.phone;
+  const body = useMemo(() => new THREE.Color("#1A1D25"), []);
+  const alu = useMemo(() => new THREE.Color("#B9BEC9"), []);
   return (
-    <group ref={group}>
+    <group ref={group} position={DEVICE.groupPos}>
       {/* laptop */}
-      <group position={[-0.35, -0.25, 0]}>
-        <RoundedBox args={[LAPTOP.w + 0.3, 0.1, 2.2]} radius={0.04} position={[0, -1.15, 1.0]}>
+      <group position={L.pos}>
+        <RoundedBox args={[L.w + 0.3, 0.1, L.depth]} radius={0.04} position={[0, -1.15, L.depth / 2 - 0.1]}>
           <meshStandardMaterial color={alu} metalness={0.6} roughness={0.35} />
         </RoundedBox>
-        <group position={[0, -1.12, -0.05]} rotation={[-0.12, 0, 0]}>
-          <RoundedBox args={[LAPTOP.w + 0.22, LAPTOP.h + 0.24, 0.07]} radius={0.05} position={[0, LAPTOP.h / 2 + 0.1, 0]}>
+        <group position={[0, -1.12, -0.05]} rotation={[L.tilt, 0, 0]}>
+          <RoundedBox args={[L.w + 0.22, L.h + 0.24, 0.07]} radius={0.05} position={[0, L.h / 2 + 0.1, 0]}>
             <meshStandardMaterial color={body} metalness={0.4} roughness={0.4} />
           </RoundedBox>
-          <group position={[0, LAPTOP.h / 2 + 0.12, 0.036]}>
-            <Screen url={project.url} title={project.name} cssW={LAPTOP.cssW} worldW={LAPTOP.w} worldH={LAPTOP.h} poster={project.screens.poster} />
+          <group position={[0, L.h / 2 + 0.12, 0.036]}>
+            <Screen url={project.screens.poster} w={L.w} h={L.h} r={0.03} view="desktop" onOpen={onOpen} />
           </group>
         </group>
       </group>
       {/* phone */}
-      <group position={[1.75, -0.55, 0.9]} rotation={[0, -0.25, 0]}>
-        <RoundedBox args={[PHONE.w + 0.1, PHONE.h + 0.12, 0.09]} radius={0.08}>
+      <group position={P.pos} rotation={[0, P.rotY, 0]}>
+        <RoundedBox args={[P.w + 0.1, P.h + 0.12, 0.09]} radius={0.08}>
           <meshStandardMaterial color={body} metalness={0.5} roughness={0.3} />
         </RoundedBox>
         <group position={[0, 0, 0.047]}>
-          <Screen url={project.url} title={`${project.name} (mobile)`} cssW={PHONE.cssW} worldW={PHONE.w} worldH={PHONE.h} poster={project.screens.mobile ?? project.screens.poster} />
+          <Screen url={project.screens.mobile ?? project.screens.poster} w={P.w} h={P.h} r={0.09} view="mobile" onOpen={onOpen} />
         </group>
       </group>
     </group>
   );
 }
 
-export default function DeviceShowcase({ project, reduced }: { project: Project; reduced: boolean }) {
+export default function DeviceShowcase({ project, reduced, onOpen }: { project: Project; reduced: boolean; onOpen: (v: PreviewView) => void }) {
+  useEffect(() => () => void (document.body.style.cursor = ""), []);
   return (
-    <div className="devices" aria-hidden="false">
-      <Canvas dpr={[1, 2]} camera={{ position: [0, 0.2, 6.4], fov: 38 }} gl={{ antialias: true, alpha: true }} style={{ position: "absolute", inset: 0 }}>
+    <div className="devices">
+      <Canvas
+        dpr={[1, 2]}
+        camera={{ position: [0, DEVICE.camY, cameraZ(1.2)], fov: DEVICE.fov }}
+        gl={{ antialias: true, alpha: true }}
+        style={{ position: "absolute", inset: 0 }}
+      >
+        <Rig />
         <ambientLight intensity={0.7} />
         <directionalLight position={[3, 4, 5]} intensity={1.6} />
         <pointLight position={[-4, 1, 3]} intensity={18} color={project.colors.accent} />
-        <Devices project={project} reduced={reduced} />
+        <Suspense fallback={null}>
+          <Devices project={project} reduced={reduced} onOpen={onOpen} />
+        </Suspense>
       </Canvas>
     </div>
   );

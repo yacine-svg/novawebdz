@@ -2,32 +2,33 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useEffect, useRef, type CSSProperties } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties } from "react";
 import { getProject, nextProject, projects, type Project } from "@/data/projects";
 import { useLang } from "@/lib/i18n";
 import { useReducedMotion, useStreetMode } from "@/lib/device";
 import { Icon } from "@/components/ui/Icon";
 import Reveal from "@/components/home/Reveal";
+import LivePreview, { type PreviewView } from "./LivePreview";
 
 const DeviceShowcase = dynamic(() => import("./DeviceShowcase"), { ssr: false });
 
-/** Phone/laptop frames with screenshots: phones, weak devices, no WebGL. */
-function DevicesFallback({ p }: { p: Project }) {
+/** Phone/laptop frames with screenshots: phones, weak devices, no WebGL. Each screen opens the live preview. */
+function DevicesFallback({ p, onOpen }: { p: Project; onOpen: (v: PreviewView) => void }) {
   const { t } = useLang();
   return (
     <div className="devices-2d">
-      <div className="laptop2d">
-        <div className="screen">
+      <button type="button" className="laptop2d" onClick={() => onOpen("desktop")} aria-label={`${t.caseStudy.tryLive} (${t.caseStudy.desktop})`}>
+        <span className="screen">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={p.screens.poster} alt={`${p.name}, ${t.caseStudy.preview}`} loading="eager" />
-        </div>
-      </div>
-      <div className="phone2d">
-        <div className="screen">
+        </span>
+      </button>
+      <button type="button" className="phone2d" onClick={() => onOpen("mobile")} aria-label={`${t.caseStudy.tryLive} (${t.caseStudy.mobile})`}>
+        <span className="screen">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={p.screens.mobile ?? p.screens.poster} alt={`${p.name} mobile`} loading="lazy" />
-        </div>
-      </div>
+        </span>
+      </button>
     </div>
   );
 }
@@ -56,6 +57,9 @@ export default function CaseStudy({ slug }: { slug: string }) {
   const mode = useStreetMode();
   const reduced = useReducedMotion();
   const index = projects.findIndex((x) => x.slug === slug);
+  const [view, setView] = useState<PreviewView | null>(null);
+  const closePreview = useCallback(() => setView(null), []);
+  const openPreview = useCallback(() => setView(window.innerWidth < 700 ? "mobile" : "desktop"), []);
 
   const vars = {
     "--p-bg": p.colors.bg,
@@ -95,13 +99,28 @@ export default function CaseStudy({ slug }: { slug: string }) {
             </div>
           </dl>
           <div className="btn-row" style={{ marginTop: 30 }}>
-            <a className="btn cs-btn" href={p.url} target="_blank" rel="noopener">
+            <button type="button" className="btn cs-btn" onClick={openPreview}>
+              {t.caseStudy.tryLive}
+              <Icon name="play" />
+            </button>
+            <a className="btn btn-line" href={p.url} target="_blank" rel="noopener">
               {t.caseStudy.live}
               <Icon name="external" />
             </a>
           </div>
         </div>
-        <div>{mode === "3d" ? <DeviceShowcase project={p} reduced={reduced} /> : mode === "2d" ? <DevicesFallback p={p} /> : <div className="devices" />}</div>
+        <div>
+          {mode === "3d" ? (
+            <>
+              <DeviceShowcase project={p} reduced={reduced} onOpen={setView} />
+              <p className="devices-hint mono">{t.caseStudy.screenHint}</p>
+            </>
+          ) : mode === "2d" ? (
+            <DevicesFallback p={p} onOpen={setView} />
+          ) : (
+            <div className="devices" />
+          )}
+        </div>
       </header>
 
       <section className="sec cs-body" id="main-content">
@@ -207,6 +226,7 @@ export default function CaseStudy({ slug }: { slug: string }) {
         <span style={{ display: "block", marginTop: 14, opacity: 0.8 }}>{tx(next.type)}</span>
         <Icon name="arrow" className="arrow" />
       </Link>
+      <LivePreview project={p} view={view} onView={setView} onClose={closePreview} />
     </article>
   );
 }

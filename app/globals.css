@@ -1992,46 +1992,130 @@ textarea.input {
 }
 .devices {
   position: relative;
-  min-height: min(68vh, 620px);
-  border-radius: 24px;
+  min-height: min(72vh, 680px);
 }
-.devices canvas {
-  border-radius: 24px;
+@media (min-width: 1000px) {
+  /* let the devices bleed to the right edge of the screen */
+  .devices {
+    margin-right: calc(var(--g) * -1);
+  }
 }
-.iframe-wrap {
-  position: relative;
+.devices-hint {
+  margin-top: 6px;
+  text-align: center;
+  opacity: 0.7;
+}
+/* live preview of a project (modal) */
+.lp {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 16px;
+  background: rgba(4, 6, 14, 0.86);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  animation: lp-in 0.35s var(--ease);
+}
+@keyframes lp-in {
+  from {
+    opacity: 0;
+  }
+}
+.lp-bar {
+  width: min(100%, 1280px);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.lp-views {
+  display: flex;
+  gap: 8px;
+}
+.lp-views .chip {
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 8px 14px;
+}
+.lp-views .chip[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--night);
+  border-color: var(--ink);
+}
+.lp-link {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  text-decoration: none;
   overflow: hidden;
-  background: #fff;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
-.iframe-wrap iframe {
+.lp-link:hover {
+  color: var(--ink);
+}
+.lp-link svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
+}
+.lp-close {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--ink);
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+}
+.lp-close:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+.lp-stage {
+  position: relative;
+  flex: none;
+}
+.lp-frame {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transform-origin: 0 0;
+  overflow: hidden;
+  background: #fff top / cover no-repeat;
+  box-shadow: 0 40px 120px -30px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+.lp-frame iframe {
+  display: block;
   width: 100%;
   height: 100%;
   border: 0;
-  display: block;
-}
-.iframe-shield {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: end center;
-  padding-bottom: 18px;
   background: transparent;
-  border: 0;
-  cursor: pointer;
+  transition: opacity 0.5s;
 }
-.iframe-shield span {
-  padding: 8px 14px;
+.lp-loading {
+  position: absolute;
+  left: 50%;
+  bottom: 24px;
+  translate: -50% 0;
+  padding: 10px 16px;
   border-radius: 999px;
-  background: rgba(7, 10, 22, 0.8);
+  background: rgba(7, 10, 22, 0.85);
   color: #fff;
-  font: 600 13px/1 var(--font-body);
-  opacity: 0;
-  transition: opacity 0.3s;
+  font-size: 0.8rem;
 }
-.iframe-shield:hover span,
-.iframe-shield:focus-visible span {
-  opacity: 1;
-}
+
 /* 2D device fallback */
 .devices-2d {
   position: relative;
@@ -2039,7 +2123,24 @@ textarea.input {
   place-items: center;
   min-height: 420px;
 }
+.laptop2d,
+.phone2d {
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  transition: transform 0.5s var(--ease);
+}
+.laptop2d:hover,
+.phone2d:hover {
+  transform: translateY(-4px);
+}
+.laptop2d .screen,
+.phone2d .screen {
+  display: block;
+}
 .laptop2d {
+  display: block;
   width: min(100%, 760px);
   aspect-ratio: 16 / 10.4;
   border-radius: 16px 16px 6px 6px;

@@ -70,7 +70,7 @@ The order of the array is the order of the shops in the street. The street gets 
 
 - Overwrite the file in `public/projects/<slug>/` with the same name. Keep the sizes above.
 - To record a clip from your phone: screen-record the site, then cut 4–6 seconds per feature. A `standouts` entry without `media` shows a "clip coming soon" placeholder.
-- A project's live link is its `url` in `data/projects.ts`. It is also what loads inside the 3D laptop and phone on the case-study page.
+- A project's live link is its `url` in `data/projects.ts`. It is what opens in the "Tester le site ici" preview (click a screen or the button on the case-study page). The laptop and phone screens themselves show `poster.jpg` and `mobile.jpg`.
 
 Five projects have no clips yet (Barber 16, Atlas Iron, Cirta Motors, Dar Yemma, Nour Beauty). Record them like the four others and add `media: "/projects/<slug>/clip-1.mp4"` to their `standouts`.
 
@@ -89,7 +89,7 @@ To check the link previews after deploying, paste the address in a WhatsApp chat
 
 ## Performance and accessibility
 
-- Phones, small screens, data-saver mode, weak or WebGL-less devices get the 2D street (same scroll story, much lighter). The 3D canvas, the laptop and phone, and the iframes load only when needed; pixel ratio is capped at 2 and drops when the frame rate does.
+- Phones, small screens, data-saver mode, weak or WebGL-less devices get the 2D street (same scroll story, much lighter). The 3D canvas and the laptop and phone load only when needed, and the live site loads only when someone opens the preview; pixel ratio is capped at 2 and drops when the frame rate does.
 - With "reduce motion" turned on in the system settings: no camera flights, no smooth scrolling, fades only.
 - Keyboard: ← → move between shops while the street is on screen; the shop index (right side on desktop) and every button are reachable with Tab, with visible focus.
 
