@@ -7,7 +7,7 @@ export const site = {
   url: "https://novawebdz.vercel.app",
   whatsapp: "213561913869", // international format, no + and no spaces
   phoneDisplay: "+213 561 91 38 69",
-  email: "", // add your e-mail here; the e-mail link stays hidden while it is empty
+  email: "novawebdz1@gmail.com", // add your e-mail here; the e-mail link stays hidden while it is empty
   instagram: "nova_webdz",
   github: "yacine-svg",
   location: "Algérie",
